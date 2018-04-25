@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Monady</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+
+      .remark-slide-content { font-size: 40px; padding: 1em 2em; }
+      .remark-code { font-size: 40px; }
+      .remark-slide-content h1 { font-size: 3em; }
+      .remark-slide-content h2 { font-size: 2em; margin-top: 0.5em; margin-bottom: 0.5em; }
+      .remark-slide-content h3 { font-size: 1.6em; }
+      .remark-slide-content img { display: block; margin-left: auto; margin-right: auto; height: 400px; }
+
+      .check { color: green; font-size: 1.5em; line-height: 47px; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Monady
+
+---
+
+class: center, middle
+
+# Monady
+
+Michał Kwiatkowski
+
+michal@trivas.pl
+
+---
+
+# Wzorce projektowe
+
+???
+
+Najpierw o __wzorcach projektowych__.
+
+W OOP jest dużo wzorców: pomagają __myśleć__ o programach, __rozpoznawać__ typowe problemy i __rozmawiać__ o nich.
+
+Przykładem wzorca w programowaniu funkcyjnym jest Enumerable.
+
+---
+
+# [Enumerable](https://hexdocs.pm/elixir/Enumerable.html)
+
+> &ldquo;This protocol requires four functions to be implemented, `reduce/3`, `count/1`, `member?/2`, and `slice/1`.&rdquo;
+
+???
+
+Opisuje koncepcję rzeczy, które można __przeglądać element po elemencie__.
+
+Typowo oznacza to __kolekcje__ takie jak listy, tablice czy mapy.
+
+Ale definicja będzie pasować również do __nieskończonych strumieni__ wartości, czy nawet __stronicowanych wyników zewnętrznego API__.
+
+Żeby skorzystać z protokołu Enumerable w Elixirze __wystarczy zaimplementować cztery funkcje__: reduce, count, member? i slice. Nasz typ danych wtedy może __nie tylko korzystać__ z wielu przydatnych funkcji, ale zyskuje też na __klarowności__ czym jest i do czego służy.
+
+---
+
+# Monady
+
+## "programowalne średniki"
+
+???
+
+__Innym wzorcem__ programowania funkcyjnego jest monad.
+
+Niektórzy nazywają monady "programowalnymi średnikami".
+
+Co to znaczy jest __mniej oczywiste__ niż przy Enumerable, dlatego __wrócimy__ do tego po obejrzeniu kilku przykładów.
+
+---
+
+## Przykład #1: listy
+
+![](dog1.gif)
+
+???
+
+__Zapytać__: kto w dowolnym języku pracował z listami przy użyciu funkcji takich jak map, filter, reduce?
+
+---
+
+## Definicja monadu
+
+- konstruktor typu **m**
+- funkcja **return** o typie<br>
+  `a -> m a`
+- funkcja **bind** o typie<br>
+  `m a , (a -> m b) -> m b`
+
+???
+
+Definicja monadu __zapożyczona z Haskella__.
+
+Do tego dochodzi jeszcze __kilka praw/zasad__, które te funkcje muszą spełniać żeby tworzyły monad. My skupimy się na trzech elementach ze slajdu.
+
+Konstruktor typu i dwie funkcje. Przyjrzymy się tym trzem elementom po kolei.
+
+---
+
+## Przykład #1: listy
+
+konstruktor typu: **list**
+
+???
+
+Konstruktor typu to termin zapożyczony z Haskella. W innych językach występuje jako generyk. Można to rozumieć jako typ wyższego rzędu.
+
+---
+
+## Przykład #1: listy
+
+```elixir
+[1, :a, "hello"]
+```
+
+???
+
+Elixir jest językiem dynamicznie typowanym i pozwala, by jedna lista miała w sobie elementy różnych typów. Rozmawiając o monadach __pominiemy jednak ten aspekt__ i ograniczymy się do mówienia o listach o __ściśle określonym typie__ elementów. Z tego punktu widzenia listę można traktować nie jako typ, ale jako konstruktor typu.
+
+---
+
+## Przykład #1: listy
+
+```elixir
+# list string
+["hello", "world"]
+
+# list integer
+[1, 2, 3]
+
+# list list integer
+[[1, 2], [3], [4, 5, 6]]
+```
+
+???
+
+Dopiero lista stringów albo lista liczb albo nawet lista list liczb jest typem.
+
+---
+
+## Przykład #1: listy
+
+- konstruktor typu **m** <span class="check">&#10003;</span>
+- funkcja **return** o typie<br>
+  `a -> m a`
+- funkcja **bind** o typie<br>
+  `m a , (a -> m b) -> m b`
+
+---
+
+## Przykład #1: listy
+
+Funkcja **return** o typie<br>
+`a -> list a`
+
+???
+
+Teraz potrzebujemy funkcji, która przyjmuje __jeden argument dowolnego typu__ i zwraca __listę tego typu__.
+
+---
+
+## Przykład #1: listy
+
+Funkcja **return** o typie<br>
+`a -> list a`
+
+```elixir
+def return(a) do
+  [a]
+end
+```
+
+???
+
+Bardzo łatwo taką funkcję napisać.
+
+---
+
+## Przykład #1: listy
+
+- konstruktor typu **m** <span class="check">&#10003;</span>
+- funkcja **return** o typie<br>
+  `a -> m a` <span class="check">&#10003;</span>
+- funkcja **bind** o typie<br>
+  `m a , (a -> m b) -> m b`
+
+---
+
+## Przykład #1: listy
+
+Funkcja **bind** o typie<br>
+`list a , (a -> list b) -> list b`
+
+np.:
+
+```
+#1  list string
+#2  (string -> list int)
+->  list int
+```
+
+---
+
+## Przykład #1: listy
+
+Funkcja **bind** o typie<br>
+`list a , (a -> list b) -> list b`
+
+```elixir
+Enum.flat_map
+```
+
+---
+
+## Przykład #1: listy
+
+- konstruktor typu **m** <span class="check">&#10003;</span>
+- funkcja **return** o typie<br>
+  `a -> m a` <span class="check">&#10003;</span>
+- funkcja **bind** o typie<br>
+  `m a , (a -> m b) -> m b` <span class="check">&#10003;</span>
+
+---
+
+## Przykład #2: obsługa błędów
+
+`{:ok, ...} | {:error, ...}`
+
+???
+
+W Elixirze funkcje, które __mogą się nie powieść__ zwracają krotkę `{:ok, wartość}` albo `{:error, opis}`.
+
+To zmusza programistę do __obsłużenia__ błędu, a przynajmniej do __zastanowienia się__ co zrobić gdy wystąpi.
+
+---
+
+## Przykład #2: obsługa błędów
+
+```elixir
+{:ok, file} = File.open("some.file")
+```
+
+???
+
+Tu przykład z funkcją `File.open`.
+
+---
+
+## Przykład #2: obsługa błędów
+
+```go
+f, err := os.Open("some.file")
+if err != nil {
+    ...
+}
+```
+
+???
+
+Wzorzec ten jest typowy również w Go.
+
+---
+
+## Przykład #2: obsługa błędów
+
+```javascript
+fs.open("some.file", "r",
+  function(error, fd) {
+    if (err) {
+      ...
+    }
+  }
+)
+```
+
+???
+
+Jak i w node.js.
+
+---
+
+## Przykład #2: obsługa błędów
+
+```elixir
+with {:ok, f1} <- File.open("a"),
+     {:ok, f2} <- File.open("b") do
+  ...
+else
+  ...
+end
+```
+
+???
+
+Wzorzec ten wystarcza przy pojedynczych wywołaniach, co jednak gdy chcemy __wywołać dwie i więcej funkcji__, które mogą zwrócić błąd?
+
+W Elixirze używa się do tego składni "with" z "else" żeby obsłużyć błędy.
+
+Jeżeli będziemy __chcieli zachować ten interface__ to musimy napisać to tak:
+
+---
+
+## Przykład #2: obsługa błędów
+
+```elixir
+with {:ok, f1} <- File.open("a"),
+     {:ok, f2} <- File.open("b") do
+  {:ok, [f1, f2]}
+end
+```
+
+???
+
+Taki kod __używa__ dwóch funkcji, które zwracają ok/error i __sam może zwrócić__ ok/error.
+
+__Zachowanie spójnego interfejsu__ ułatwia ponowne użycie funkcji w różnych kontekstach.
+
+A co gdyby zaprogramować ten wzorzec jako monad?
+
+---
+
+## Przykład #2: obsługa błędów
+
+![](dog2.gif)
+
+---
+
+## Przykład #2: obsługa błędów
+
+`{:ok, ...} | {:error, ...}`
+
+```elm
+type Result error value
+    = Ok value
+    | Err error
+```
+
+```haskell
+data Either a b = Left a | Right b
+```
+
+???
+
+W Elmie ten typ nazywa się `Result`.
+
+W Haskellu `Either`.
+
+---
+
+## Przykład #2: obsługa błędów
+
+`{:ok, ...} | :error`
+
+```elm
+type Maybe a
+    = Just a
+    | Nothing
+```
+
+```ocaml
+type 'a option = Some of 'a | None
+```
+
+???
+
+Do `Result` bardzo podobnym monadem jest `Maybe`.
+
+W Elmie i Haskellu `Maybe`.
+
+W Ocamlu `option`.
+
+---
+
+## Elixir jako język funkcyjny
+
+* funkcje jako wartości
+* funkcje wyższego rzędu
+* niemutowalne struktury danych
+* brak przypisania
+* brak efektów ubocznych
+
+---
+
+## Efekty uboczne
+
+["Why OO Sucks"](http://harmful.cat-v.org/software/OO_programming/why_oo_sucks) - _Joe Armstrong_
+
+> State is the root of all evil. In particular functions with side effects should be avoided.
+
+???
+
+Elixir nie daje mechanizmów do radzenia sobie z efektami ubocznymi.
+
+W szczególności __nie udziela żadnej pomocy w rozdzieleniu__ funkcji z efektami od czystych funkcji.
+
+---
+
+## Czyste funkcje
+
+## _y = f(x)_
+
+???
+
+Czyste funkcje to funkcje __"matematyczne"__. Polegają tylko na swoich argumentach, a ich wyjście zawiera się w zwracanej wartości.
+
+Dlaczego to jest ważne?
+
+Czyste funkcje bardzo __łatwo zrozumieć__. Wywołanie czystej funkcji __można podmienić z jej wartością__ bez zmiany zachowania programu.
+
+Bardzo __łatwo je testować__. Nie polegają na żadnym stanie, nie są potrzebne __mocki__, wystarczy skonstruować wartości argumentów i sprawdzić zwracaną wartość.
+
+---
+
+## [Ecto.Changeset](https://hexdocs.pm/ecto/Ecto.Changeset.html)
+
+???
+
+__Zapytać__: kto używał Ecto?
+
+`Ecto.Changeset` jest dobrym przykładem __opisywania__ efektów ubocznych jako oddzielnej operacji od ich __wykonania__ (`Repo.insert`).
+
+---
+
+## Przykład #3: efekty uboczne
+
+![](dog3.gif)
+
+---
+
+## Definicja monadu
+
+- konstruktor typu **m**
+- funkcja **return** o typie<br>
+  `a -> m a`
+- funkcja **bind** o typie<br>
+  `m a , (a -> m b) -> m b`
+
+???
+
+Wróćmy do definicji monadu.
+
+Z monadu __nie da się "wyskoczyć"__, co jest bardzo przydatne w przypadku monadu `Eff`.
+
+Oczywiście nie dla wszystkich typów jest to ważna cecha i niektóre defniują taką funkcję "wyjścia".
+
+Na przykład __hd__ albo __reduce__ dla list.
+
+---
+
+## Przykład #3: efekty uboczne
+
+`IO`
+
+`Eff`
+
+`Task`
+
+???
+
+W Haskellu ten monad to `IO`.
+
+W PureScripcie `Eff`.
+
+W Elmie `Task`.
+
+---
+
+## Monady to
+## "programowalne średniki"
+
+* tworzenie wartości: `return`
+* łączenie wartości: `bind`
+
+???
+
+Monad definiuje __sposób tworzenia__ wartości (`return`) i ich __łączenia__ (`bind`).
+
+__Te łączenie__ to niejako średnik pomiędzy funkcjami. __Znaczenie__ stojące za tym łączeniem zależy wyłącznie od implementacji monadu.
+
+---
+
+## Przykłady: podsumowanie
+
+- list: iteracja
+- result: obsługa błędów
+- maybe: brak wartości
+- effect: efekty uboczne
+
+???
+
+List monad ukrywa iterację. Każde wywołanie funkcji działa na jedynym elemencie. To że jest ich wiele jest ukryte.
+
+Result monad ukrywa obsługę błędów. Funkcja wywoływana jest jakby była jedyną. Nie wie że przed nią musiało się udać 15 innych kroków.
+
+Monad Effect ukrywa uruchamianie efektów ubocznych. Funkcje mogą być pure, nie wiedzą że polegają na efektach ubocznych.
+
+---
+
+## Pytania?
+
+![](dog4.gif)
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
